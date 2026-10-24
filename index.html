@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Echo</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 42%,
+            #4d8dcc 0%,
+            #24598f 42%,
+            #0b2545 78%,
+            #06152b 100%);
+    font-family: Arial, sans-serif;
+    color: white;
+}
+
+.particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    box-shadow:
+        0 0 5px rgba(255,255,255,0.8),
+        0 0 10px rgba(180,220,255,0.45);
+    animation: floatParticle linear infinite;
+    pointer-events: none;
+}
+
+@keyframes floatParticle {
+    0% {
+        transform: translateY(110vh) scale(0.6);
+        opacity: 0;
+    }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% {
+        transform: translateY(-10vh) scale(1.2);
+        opacity: 0;
+    }
+}
+
+#game {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#title {
+    margin-bottom: 8px;
+    font-size: 32px;
+    font-weight: 300;
+    letter-spacing: 6px;
+    text-shadow:
+        0 0 8px rgba(255,255,255,0.35),
+        0 0 20px rgba(150,210,255,0.25);
+}
+
+#info {
+    display: flex;
+    gap: 35px;
+    margin-bottom: 10px;
+    font-size: 17px;
+}
+
+#message {
+    height: 25px;
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+#board {
+    position: relative;
+    width: 360px;
+    height: 360px;
+    border: 2px solid rgba(220,240,255,0.30);
+    border-radius: 50%;
+    background: transparent;
+    overflow: visible;
+    box-shadow:
+        0 0 0 5px rgba(150,210,255,0.025),
+        0 0 18px rgba(120,190,255,0.08);
+    animation: boardBreathing 4s ease-in-out infinite;
+}
+
+@keyframes boardBreathing {
+    0%,100% {
+        box-shadow:
+            0 0 0 5px rgba(150,210,255,0.025),
+            0 0 18px rgba(120,190,255,0.08);
+    }
+    50% {
+        box-shadow:
+            0 0 0 7px rgba(150,210,255,0.035),
+            0 0 25px rgba(120,190,255,0.12);
+    }
+}
+
+/* =========================
+   SUBTLE ATMOSPHERIC CIRCLES
+========================= */
+
+.circle {
+    position: absolute;
+    border-radius: 50%;
+    background: transparent;
+    pointer-events: none;
+}
+
+#circle2 {
+    width: 240px;
+    height: 240px;
+    left: 57px;
+    top: 57px;
+    border: 1px solid rgba(190,225,255,0.18);
+    box-shadow:
+        0 0 10px rgba(150,205,255,0.035),
+        inset 0 0 10px rgba(150,205,255,0.025);
+}
+
+#circle1 {
+    width: 120px;
+    height: 120px;
+    left: 117px;
+    top: 117px;
+    border: 1px solid rgba(200,230,255,0.20);
+    box-shadow:
+        0 0 10px rgba(160,210,255,0.04),
+        inset 0 0 10px rgba(160,210,255,0.025);
+}
+
+/* =========================
+   SUBTLE ATMOSPHERIC DIAMETERS
+========================= */
+
+.diameter {
+    position: absolute;
+    width: 348px;
+    height: 1px;
+    left: 50%;
+    top: 50%;
+    transform-origin: center;
+    background: rgba(190,225,255,0.13);
+    box-shadow:
+        0 0 6px rgba(150,205,255,0.035);
+}
+
+#d1 { transform: translate(-50%,-50%) rotate(90deg); }
+#d2 { transform: translate(-50%,-50%) rotate(30deg); }
+#d3 { transform: translate(-50%,-50%) rotate(150deg); }
+
+#player {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffd84d;
+    border: 2px solid #b8860b;
+    box-shadow:
+        0 0 7px rgba(255,216,77,0.9),
+        0 0 16px rgba(255,216,77,0.45);
+    transform: translate(-50%,-50%);
+    transition:
+        left 0.15s ease,
+        top 0.15s ease,
+        transform 0.15s ease;
+    z-index: 10;
+}
+
+.echo {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #9b7bea;
+    border: 2px solid #5d46a8;
+    transform: translate(-50%,-50%);
+    box-shadow:
+        0 0 7px rgba(155,123,234,0.85),
+        0 0 15px rgba(155,123,234,0.38);
+    z-index: 8;
+}
+
+.circle-echo {
+    box-shadow:
+        0 0 7px rgba(180,150,255,0.9),
+        0 0 17px rgba(180,150,255,0.42);
+}
+
+.collision {
+    animation: collisionPulse 0.45s ease-out;
+}
+
+@keyframes collisionPulse {
+    0% {
+        transform: translate(-50%,-50%) scale(1);
+    }
+    35% {
+        transform: translate(-50%,-50%) scale(1.7);
+    }
+    100% {
+        transform: translate(-50%,-50%) scale(0.2);
+        opacity: 0;
+    }
+}
+
+.shake {
+    animation: shake 0.45s ease-in-out;
+}
+
+@keyframes shake {
+    0%,100% { transform: translate(0,0); }
+    20% { transform: translate(-4px,2px); }
+    40% { transform: translate(4px,-2px); }
+    60% { transform: translate(-3px,-2px); }
+    80% { transform: translate(3px,2px); }
+}
+
+.ripple {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    margin-left: -6px;
+    margin-top: -6px;
+    border: 2px solid rgba(255,220,90,0.7);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: ripple 0.7s ease-out forwards;
+    z-index: 4;
+}
+
+@keyframes ripple {
+    from {
+        transform: scale(0.4);
+        opacity: 0.8;
+    }
+    to {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+.echo-ripple {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    margin-left: -5px;
+    margin-top: -5px;
+    border: 2px solid rgba(180,150,255,0.55);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: echoRipple 0.8s ease-out forwards;
+    z-index: 3;
+}
+
+@keyframes echoRipple {
+    from {
+        transform: scale(0.4);
+        opacity: 0.7;
+    }
+    to {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+.smile {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+    font-size: 52px;
+    z-index: 20;
+    animation: smileAnimation 2s ease-in-out forwards;
+    pointer-events: none;
+}
+
+@keyframes smileAnimation {
+    0% {
+        transform: translate(-50%,-50%) scale(0.3);
+        opacity: 0;
+    }
+    20% {
+        transform: translate(-50%,-50%) scale(1.2);
+        opacity: 1;
+    }
+    45%,80% {
+        transform: translate(-50%,-50%) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%,-50%) scale(1.25);
+        opacity: 0;
+    }
+}
+
+#controls {
+    display: grid;
+    grid-template-columns: 55px 55px 55px;
+    grid-template-rows: 55px 55px;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+.arrow {
+    width: 55px;
+    height: 55px;
+    border: 1px solid rgba(220,240,255,0.25);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.9);
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.arrow:active {
+    transform: scale(0.92);
+}
+
+#up {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+#left {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+#down {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+#right {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.final-pulse {
+    animation:
+        boardBreathing 4s ease-in-out infinite,
+        finalPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes finalPulse {
+    0%,100% { filter: brightness(1); }
+    50% { filter: brightness(1.3); }
+}
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+    <div id="title">ECHO</div>
+
+    <div id="info">
+        <div>Level: <span id="level">1</span></div>
+        <div>Attempts: <span id="attempts">3</span></div>
+    </div>
+
+    <div id="message">Level 1 — Go!</div>
+
+    <div id="board">
+
+        <div id="circle2" class="circle"></div>
+        <div id="circle1" class="circle"></div>
+
+        <div id="d1" class="diameter"></div>
+        <div id="d2" class="diameter"></div>
+        <div id="d3" class="diameter"></div>
+
+        <div id="player"></div>
+
+    </div>
+
+    <div id="controls">
+
+        <button id="up" class="arrow" data-direction="up">↑</button>
+        <button id="left" class="arrow" data-direction="left">←</button>
+        <button id="down" class="arrow" data-direction="down">↓</button>
+        <button id="right" class="arrow" data-direction="right">→</button>
+
+    </div>
+
+</div>
+
+<script>
+
+/* =========================
+   GAME CONSTANTS
+========================= */
+
+const CENTER = 177;
+
+const MAX_ATTEMPTS = 3;
+const MAX_LEVEL = 7;
+
+const radii = {
+    1: 60,
+    2: 120,
+    3: 174
+};
+
+const LEVEL_SPEED = {
+    1: 4.6,
+    2: 5.75,
+    3: 6.9,
+    4: 8.05,
+    5: 9.2,
+    6: 10.35,
+    7: 11.5
+};
+
+const MOVE_COOLDOWN = 300;
+
+const ECHO_PROTECTION = 400;
+
+const HIT_DISTANCE = 18;
+
+const COLLISION_COOLDOWN = 1000;
+
+
+/* =========================
+   GAME STATE
+========================= */
+
+let ring = 3;
+let sector = 0;
+
+let level = 1;
+
+let attempts = MAX_ATTEMPTS;
+
+let echoes = [];
+
+let gameLocked = false;
+
+let collisionCooldownUntil = 0;
+
+let nextMoveAllowed = 0;
+
+let lastDirection = null;
+
+
+/* =========================
+   DOM
+========================= */
+
+const board =
+    document.getElementById("board");
+
+const player =
+    document.getElementById("player");
+
+const levelDisplay =
+    document.getElementById("level");
+
+const attemptsDisplay =
+    document.getElementById("attempts");
+
+const message =
+    document.getElementById("message");
+
+
+/* =========================
+   PARTICLES
+========================= */
+
+for (let i = 0; i < 24; i++) {
+
+    const p = document.createElement("div");
+
+    p.className = "particle";
+
+    p.style.left =
+        Math.random() * 100 + "%";
+
+    p.style.animationDuration =
+        (8 + Math.random() * 12) + "s";
+
+    p.style.animationDelay =
+        (-Math.random() * 20) + "s";
+
+    const size =
+        2 + Math.random() * 2;
+
+    p.style.width = size + "px";
+    p.style.height = size + "px";
+
+    document.body.appendChild(p);
+}
+
+
+/* =========================
+   AUDIO
+========================= */
+
+let audioContext = null;
+
+const echoSounds = new Map();
+
+
+function initAudio() {
+
+    if (!audioContext) {
+
+        audioContext =
+            new (window.AudioContext ||
+                 window.webkitAudioContext)();
+    }
+
+    if (audioContext.state === "suspended") {
+        audioContext.resume();
+    }
+}
+
+
+function playMoveSound() {
+
+    initAudio();
+
+    const now =
+        audioContext.currentTime;
+
+    const oscillator =
+        audioContext.createOscillator();
+
+    const gain =
+        audioContext.createGain();
+
+    oscillator.type = "sine";
+
+    oscillator.frequency.setValueAtTime(
+        620,
+        now
+    );
+
+    oscillator.frequency.exponentialRampToValueAtTime(
+        420,
+        now + 0.08
+    );
+
+    gain.gain.setValueAtTime(
+        0.0001,
+        now
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.045,
+        now + 0.01
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        now + 0.12
+    );
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+
+    oscillator.start(now);
+    oscillator.stop(now + 0.13);
+}
+
+
+function startEchoSound(echo) {
+
+    if (echoSounds.has(echo)) {
+        return;
+    }
+
+    initAudio();
+
+    const oscillator =
+        audioContext.createOscillator();
+
+    const gain =
+        audioContext.createGain();
+
+    oscillator.type = "sine";
+
+    oscillator.frequency.value = 180;
+
+    gain.gain.value = 0.018;
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+
+    oscillator.start();
+
+    echoSounds.set(echo, {
+        oscillator,
+        gain
+    });
+}
+
+
+function updateEchoSound(echo) {
+
+    const sound =
+        echoSounds.get(echo);
+
+    if (!sound) {
+        return;
+    }
+
+    const x =
+        parseFloat(echo.style.left);
+
+    const y =
+        parseFloat(echo.style.top);
+
+    const distance =
+        Math.sqrt(
+            (x - CENTER) ** 2 +
+            (y - CENTER) ** 2
+        );
+
+    const frequency =
+        150 + distance * 1.4;
+
+    sound.oscillator.frequency
+        .setTargetAtTime(
+            frequency,
+            audioContext.currentTime,
+            0.04
+        );
+}
+
+
+function stopEchoSound(echo) {
+
+    const sound =
+        echoSounds.get(echo);
+
+    if (!sound) {
+        return;
+    }
+
+    try {
+
+        sound.gain.gain.cancelScheduledValues(
+            audioContext.currentTime
+        );
+
+        sound.gain.gain.setTargetAtTime(
+            0.0001,
+            audioContext.currentTime,
+            0.03
+        );
+
+        sound.oscillator.stop(
+            audioContext.currentTime + 0.08
+        );
+
+    } catch (e) {}
+
+    echoSounds.delete(echo);
+}
+
+
+function stopAllEchoSounds() {
+
+    for (const echo of echoes) {
+        stopEchoSound(echo);
+    }
+}
+
+
+/* =========================
+   CLEAR ALL ECHOES
+========================= */
+
+function clearAllEchoes() {
+
+    stopAllEchoSounds();
+
+    echoes.forEach(
+        echo => echo.remove()
+    );
+
+    echoes = [];
+}
+
+
+/* =========================
+   COLLISION SOUND
+========================= */
+
+function playCollisionSound() {
+
+    initAudio();
+
+    const now =
+        audioContext.currentTime;
+
+    const oscillator =
+        audioContext.createOscillator();
+
+    const gain =
+        audioContext.createGain();
+
+    oscillator.type = "triangle";
+
+    oscillator.frequency.setValueAtTime(
+        120,
+        now
+    );
+
+    oscillator.frequency.exponentialRampToValueAtTime(
+        55,
+        now + 0.25
+    );
+
+    gain.gain.setValueAtTime(
+        0.0001,
+        now
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.12,
+        now + 0.015
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        now + 0.3
+    );
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+
+    oscillator.start(now);
+    oscillator.stop(now + 0.32);
+
+
+    const bufferSize =
+        audioContext.sampleRate * 0.08;
+
+    const buffer =
+        audioContext.createBuffer(
+            1,
+            bufferSize,
+            audioContext.sampleRate
+        );
+
+    const data =
+        buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+
+        data[i] =
+            (Math.random() * 2 - 1) *
+            Math.exp(-i / 500);
+    }
+
+    const noise =
+        audioContext.createBufferSource();
+
+    const noiseGain =
+        audioContext.createGain();
+
+    noise.buffer = buffer;
+
+    noiseGain.gain.setValueAtTime(
+        0.04,
+        now
+    );
+
+    noiseGain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        now + 0.08
+    );
+
+    noise.connect(noiseGain);
+    noiseGain.connect(audioContext.destination);
+
+    noise.start(now);
+}
+
+
+function playCompleteSound() {
+
+    initAudio();
+
+    const now =
+        audioContext.currentTime;
+
+    const notes =
+        [523, 659, 784];
+
+    notes.forEach((frequency, index) => {
+
+        const start =
+            now + index * 0.15;
+
+        const oscillator =
+            audioContext.createOscillator();
+
+        const gain =
+            audioContext.createGain();
+
+        oscillator.type = "sine";
+
+        oscillator.frequency.value =
+            frequency;
+
+        gain.gain.setValueAtTime(
+            0.0001,
+            start
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.08,
+            start + 0.02
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            start + 0.45
+        );
+
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+
+        oscillator.start(start);
+        oscillator.stop(start + 0.46);
+    });
+}
+
+
+/* =========================
+   EFFECTS
+========================= */
+
+function createRipple(x, y) {
+
+    const ripple =
+        document.createElement("div");
+
+    ripple.className = "ripple";
+
+    ripple.style.left = x + "px";
+    ripple.style.top = y + "px";
+
+    board.appendChild(ripple);
+
+    setTimeout(() => ripple.remove(), 700);
+}
+
+
+function createEchoRipple(x, y) {
+
+    const ripple =
+        document.createElement("div");
+
+    ripple.className = "echo-ripple";
+
+    ripple.style.left = x + "px";
+    ripple.style.top = y + "px";
+
+    board.appendChild(ripple);
+
+    setTimeout(() => ripple.remove(), 800);
+}
+
+
+function showCenterGlow() {
+
+    const glow =
+        document.createElement("div");
+
+    glow.className = "smile";
+
+    glow.textContent = "😊";
+
+    board.appendChild(glow);
+
+    setTimeout(() => glow.remove(), 2000);
+}
+
+
+/* =========================
+   GEOMETRY
+========================= */
+
+const sectorToDiameter =
+    [0, 1, 2, 0, 1, 2];
+
+const diameterAngles =
+    [-90, -30, 30];
+
+
+function getPosition(
+    ringValue,
+    sectorValue
+) {
+
+    if (ringValue === 0) {
+
+        return {
+            x: CENTER,
+            y: CENTER
+        };
+    }
+
+    const angle =
+        sectorValue * 60 - 90;
+
+    const radians =
+        angle * Math.PI / 180;
+
+    const radius =
+        radii[ringValue];
+
+    return {
+        x:
+            CENTER +
+            radius *
+            Math.cos(radians),
+
+        y:
+            CENTER +
+            radius *
+            Math.sin(radians)
+    };
+}
+
+
+function getEchoStartDistance(ringValue) {
+
+    if (ringValue === 1) return 60;
+    if (ringValue === 2) return 120;
+
+    return 174;
+}
+
+
+function getMovementVector(
+    oldRing,
+    oldSector,
+    newRing,
+    newSector
+) {
+
+    const oldPos =
+        getPosition(
+            oldRing,
+            oldSector
+        );
+
+    const newPos =
+        getPosition(
+            newRing,
+            newSector
+        );
+
+    return {
+        x: newPos.x - oldPos.x,
+        y: newPos.y - oldPos.y
+    };
+}
+
+
+/* =========================
+   DIAMETER ECHO
+========================= */
+
+function createDiameterEcho(
+    ringValue,
+    sectorValue,
+    movementVector
+) {
+
+    const echo =
+        document.createElement("div");
+
+    echo.className = "echo";
+
+    echo.dataset.type =
+        "diameter";
+
+    echo.dataset.ring =
+        ringValue;
+
+    echo.dataset.sector =
+        sectorValue;
+
+
+    const diameterIndex =
+        sectorToDiameter[sectorValue];
+
+    echo.dataset.diameter =
+        diameterIndex;
+
+    const angle =
+        diameterAngles[diameterIndex];
+
+    echo.dataset.angle =
+        angle;
+
+
+    const radians =
+        angle * Math.PI / 180;
+
+    const startDistance =
+        getEchoStartDistance(ringValue);
+
+
+    const diameterX =
+        Math.cos(radians);
+
+    const diameterY =
+        Math.sin(radians);
+
+    const projection =
+        movementVector.x * diameterX +
+        movementVector.y * diameterY;
+
+
+    let direction;
+
+
+    if (Math.abs(projection) > 0.01) {
+
+        direction =
+            projection > 0 ? 1 : -1;
+
+    } else {
+
+        direction =
+            sectorValue % 2 === 0
+                ? 1
+                : -1;
+    }
+
+
+    echo.dataset.distance =
+        startDistance;
+
+    echo.dataset.direction =
+        direction;
+
+    echo.dataset.speed =
+        LEVEL_SPEED[level] +
+        echoes.length * 0.35;
+
+    echo.dataset.createdAt =
+        performance.now();
+
+
+    const x =
+        CENTER +
+        startDistance *
+        Math.cos(radians);
+
+    const y =
+        CENTER +
+        startDistance *
+        Math.sin(radians);
+
+
+    echo.style.left =
+        x + "px";
+
+    echo.style.top =
+        y + "px";
+
+
+    board.appendChild(echo);
+
+    echoes.push(echo);
+
+
+    createEchoRipple(x, y);
+
+
+    setTimeout(() => {
+
+        if (
+            echoes.includes(echo) &&
+            !gameLocked
+        ) {
+
+            startEchoSound(echo);
+        }
+
+    }, ECHO_PROTECTION);
+}
+
+
+/* =========================
+   CIRCLE ECHO
+========================= */
+
+function createCircleEcho(
+    ringValue,
+    sectorValue,
+    movementVector
+) {
+
+    const echo =
+        document.createElement("div");
+
+    echo.className =
+        "echo circle-echo";
+
+    echo.dataset.type =
+        "circle";
+
+    echo.dataset.ring =
+        ringValue;
+
+    echo.dataset.sector =
+        sectorValue;
+
+
+    const startAngle =
+        sectorValue * 60 - 90;
+
+    echo.dataset.angle =
+        startAngle;
+
+
+    const radius =
+        getEchoStartDistance(ringValue);
+
+    const circleLinearSpeed =
+        (
+            LEVEL_SPEED[level] +
+            echoes.length * 0.35
+        ) * 1.05;
+
+    const circleSpeedMagnitude =
+        (circleLinearSpeed / radius) *
+        (180 / Math.PI);
+
+
+    const radians =
+        startAngle * Math.PI / 180;
+
+    const tangentX =
+        -Math.sin(radians);
+
+    const tangentY =
+        Math.cos(radians);
+
+    const tangentProjection =
+        movementVector.x * tangentX +
+        movementVector.y * tangentY;
+
+
+    const circleEchoCount =
+        echoes.filter(
+            e =>
+                e.dataset.type ===
+                "circle"
+        ).length;
+
+
+    let circleSpeed;
+
+
+    if (
+        Math.abs(tangentProjection) > 0.01
+    ) {
+
+        circleSpeed =
+            tangentProjection > 0
+                ? circleSpeedMagnitude
+                : -circleSpeedMagnitude;
+
+    } else {
+
+        circleSpeed =
+            circleEchoCount % 2 === 0
+                ? circleSpeedMagnitude
+                : -circleSpeedMagnitude;
+    }
+
+
+    echo.dataset.circleSpeed =
+        circleSpeed;
+
+    echo.dataset.circleAngle =
+        startAngle;
+
+    echo.dataset.circleRadius =
+        radius;
+
+    echo.dataset.createdAt =
+        performance.now();
+
+
+    const x =
+        CENTER +
+        radius *
+        Math.cos(radians);
+
+    const y =
+        CENTER +
+        radius *
+        Math.sin(radians);
+
+
+    echo.style.left =
+        x + "px";
+
+    echo.style.top =
+        y + "px";
+
+
+    board.appendChild(echo);
+
+    echoes.push(echo);
+
+
+    createEchoRipple(x, y);
+
+
+    setTimeout(() => {
+
+        if (
+            echoes.includes(echo) &&
+            !gameLocked
+        ) {
+
+            startEchoSound(echo);
+        }
+
+    }, ECHO_PROTECTION);
+}
+
+
+/* =========================
+   ECHO CREATION
+========================= */
+
+function createEcho(
+    ringValue,
+    sectorValue,
+    movementVector
+) {
+
+    const echoNumber =
+        echoes.length + 1;
+
+
+    if (
+        echoNumber <= 2 ||
+        echoNumber % 2 === 0
+    ) {
+
+        createDiameterEcho(
+            ringValue,
+            sectorValue,
+            movementVector
+        );
+
+    } else {
+
+        createCircleEcho(
+            ringValue,
+            sectorValue,
+            movementVector
+        );
+    }
+}
+
+
+/* =========================
+   DIAMETER MOVEMENT
+========================= */
+
+function updateDiameterEcho(echo) {
+
+    let distance =
+        parseFloat(
+            echo.dataset.distance
+        );
+
+    const direction =
+        parseFloat(
+            echo.dataset.direction
+        );
+
+    const speed =
+        parseFloat(
+            echo.dataset.speed
+        );
+
+
+    distance +=
+        direction * speed;
+
+
+    const maxDistance = 174;
+
+
+    if (
+        distance > maxDistance ||
+        distance < -maxDistance
+    ) {
+
+        echo.dataset.direction =
+            -direction;
+
+        distance =
+            Math.max(
+                -maxDistance,
+                Math.min(
+                    maxDistance,
+                    distance
+                )
+            );
+    }
+
+
+    echo.dataset.distance =
+        distance;
+
+
+    const angle =
+        parseFloat(
+            echo.dataset.angle
+        );
+
+    const radians =
+        angle * Math.PI / 180;
+
+
+    const x =
+        CENTER +
+        distance *
+        Math.cos(radians);
+
+    const y =
+        CENTER +
+        distance *
+        Math.sin(radians);
+
+
+    echo.style.left =
+        x + "px";
+
+    echo.style.top =
+        y + "px";
+
+
+    updateEchoSound(echo);
+}
+
+
+/* =========================
+   CIRCLE MOVEMENT
+========================= */
+
+function updateCircleEcho(echo) {
+
+    let angle =
+        parseFloat(
+            echo.dataset.circleAngle
+        );
+
+    const speed =
+        parseFloat(
+            echo.dataset.circleSpeed
+        );
+
+
+    angle += speed;
+
+    echo.dataset.circleAngle =
+        angle;
+
+
+    const radius =
+        parseFloat(
+            echo.dataset.circleRadius
+        );
+
+    const radians =
+        angle * Math.PI / 180;
+
+
+    const x =
+        CENTER +
+        radius *
+        Math.cos(radians);
+
+    const y =
+        CENTER +
+        radius *
+        Math.sin(radians);
+
+
+    echo.style.left =
+        x + "px";
+
+    echo.style.top =
+        y + "px";
+
+
+    updateEchoSound(echo);
+}
+
+
+/* =========================
+   ECHO UPDATE
+========================= */
+
+function updateEcho(echo) {
+
+    if (
+        echo.dataset.type ===
+        "circle"
+    ) {
+
+        updateCircleEcho(echo);
+
+    } else {
+
+        updateDiameterEcho(echo);
+    }
+}
+
+
+/* =========================
+   COLLISION
+========================= */
+
+function checkCollision(echo) {
+
+    const createdAt =
+        parseFloat(
+            echo.dataset.createdAt
+        );
+
+
+    if (
+        performance.now() -
+        createdAt <
+        ECHO_PROTECTION
+    ) {
+
+        return false;
+    }
+
+
+    const px =
+        parseFloat(
+            player.style.left
+        );
+
+    const py =
+        parseFloat(
+            player.style.top
+        );
+
+
+    const ex =
+        parseFloat(
+            echo.style.left
+        );
+
+    const ey =
+        parseFloat(
+            echo.style.top
+        );
+
+
+    const distance =
+        Math.sqrt(
+            (px - ex) ** 2 +
+            (py - ey) ** 2
+        );
+
+
+    return distance <
+        HIT_DISTANCE;
+}
+
+
+/* =========================
+   COLLISION EFFECT
+========================= */
+
+function collisionEffect(echo) {
+
+    if (
+        performance.now() <
+        collisionCooldownUntil
+    ) {
+
+        return;
+    }
+
+
+    collisionCooldownUntil =
+        performance.now() +
+        COLLISION_COOLDOWN;
+
+
+    stopEchoSound(echo);
+
+
+    board.classList.add("shake");
+
+    player.classList.add("collision");
+
+    echo.classList.add("collision");
+
+
+    message.textContent =
+        "💥 ECHO!";
+
+
+    attempts--;
+
+    attemptsDisplay.textContent =
+        attempts;
+
+
+    playCollisionSound();
+
+
+    setTimeout(() => {
+
+        board.classList.remove("shake");
+
+        player.classList.remove("collision");
+
+        echo.classList.remove("collision");
+
+    }, 450);
+
+
+    if (attempts <= 0) {
+
+        gameOver();
+
+        return;
+    }
+
+
+    /*
+       NEW:
+       After the collision animation finishes,
+       remove ALL existing Echoes so the next
+       attempt starts completely fresh.
+    */
+
+    setTimeout(() => {
+
+        clearAllEchoes();
+
+        ring = 3;
+        sector = 0;
+        lastDirection = null;
+
+        updatePlayerPosition();
+
+        message.textContent =
+            `Level ${level} — Try again`;
+
+    }, 500);
+}
+
+
+/* =========================
+   ANIMATION
+========================= */
+
+function animate() {
+
+    for (const echo of echoes) {
+
+        updateEcho(echo);
+
+        if (
+            !gameLocked &&
+            checkCollision(echo)
+        ) {
+
+            collisionEffect(echo);
+        }
+    }
+
+    requestAnimationFrame(animate);
+}
+
+
+/* =========================
+   PLAYER
+========================= */
+
+function updatePlayerPosition() {
+
+    const pos =
+        getPosition(
+            ring,
+            sector
+        );
+
+    player.style.left =
+        pos.x + "px";
+
+    player.style.top =
+        pos.y + "px";
+}
+
+
+function updateDisplay() {
+
+    levelDisplay.textContent =
+        level;
+
+    attemptsDisplay.textContent =
+        attempts;
+}
+
+
+/* =========================
+   COMPLETE LEVEL
+========================= */
+
+function completeLevel() {
+
+    gameLocked = true;
+
+    clearAllEchoes();
+
+
+    if (level >= MAX_LEVEL) {
+
+        message.textContent =
+            "🎉 You completed all 7 levels!";
+
+        return;
+    }
+
+
+    setTimeout(() => {
+
+        level++;
+
+        attempts =
+            MAX_ATTEMPTS;
+
+        ring = 3;
+
+        sector = 0;
+
+        lastDirection = null;
+
+
+        updatePlayerPosition();
+
+        updateDisplay();
+
+
+        board.className = "";
+
+        board.classList.add(
+            `level-${level}`
+        );
+
+
+        message.textContent =
+            `Level ${level} — Go!`;
+
+
+        gameLocked = false;
+
+    }, 1800);
+}
+
+
+/* =========================
+   GAME OVER
+========================= */
+
+function gameOver() {
+
+    gameLocked = true;
+
+    clearAllEchoes();
+
+    message.textContent =
+        "Game Over — Press Enter to restart";
+
+    board.classList.add(
+        "final-pulse"
+    );
+}
+
+
+/* =========================
+   PLAYER MOVEMENT
+========================= */
+
+function movePlayer(direction) {
+
+    initAudio();
+
+
+    if (gameLocked) {
+        return;
+    }
+
+
+    const now =
+        performance.now();
+
+
+    if (
+        now <
+        nextMoveAllowed
+    ) {
+
+        return;
+    }
+
+
+    if (
+        direction === lastDirection
+    ) {
+
+        return;
+    }
+
+
+    const oldRing = ring;
+    const oldSector = sector;
+
+
+    let newRing = ring;
+    let newSector = sector;
+
+
+    if (direction === "down") {
+
+        if (ring > 0) {
+            newRing--;
+        }
+
+    } else if (direction === "up") {
+
+        if (ring < 3) {
+            newRing++;
+        }
+
+    } else if (direction === "left") {
+
+        newSector =
+            (sector + 5) % 6;
+
+    } else if (direction === "right") {
+
+        newSector =
+            (sector + 1) % 6;
+    }
+
+
+    if (
+        newRing === ring &&
+        newSector === sector
+    ) {
+
+        return;
+    }
+
+
+    const movementVector =
+        getMovementVector(
+            oldRing,
+            oldSector,
+            newRing,
+            newSector
+        );
+
+
+    ring = newRing;
+    sector = newSector;
+
+
+    lastDirection =
+        direction;
+
+
+    nextMoveAllowed =
+        now + MOVE_COOLDOWN;
+
+
+    updatePlayerPosition();
+
+    playMoveSound();
+
+
+    const pos =
+        getPosition(
+            ring,
+            sector
+        );
+
+
+    createRipple(
+        pos.x,
+        pos.y
+    );
+
+
+    if (ring === 0) {
+
+        playCompleteSound();
+
+        showCenterGlow();
+
+
+        setTimeout(() => {
+
+            if (!gameLocked) {
+                completeLevel();
+            }
+
+        }, 2000);
+
+        return;
+    }
+
+
+    if (
+        echoes.length < level
+    ) {
+
+        createEcho(
+            ring,
+            sector,
+            movementVector
+        );
+    }
+}
+
+
+/* =========================
+   KEYBOARD
+========================= */
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.key === "Enter" &&
+            gameLocked
+        ) {
+
+            restartGame();
+
+            return;
+        }
+
+
+        const keyMap = {
+
+            ArrowUp: "up",
+
+            ArrowDown: "down",
+
+            ArrowLeft: "left",
+
+            ArrowRight: "right"
+        };
+
+
+        const direction =
+            keyMap[event.key];
+
+
+        if (direction) {
+
+            event.preventDefault();
+
+            movePlayer(direction);
+        }
+
+    }
+);
+
+
+/* =========================
+   BUTTONS
+========================= */
+
+document
+    .querySelectorAll(".arrow")
+    .forEach(button => {
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                movePlayer(
+                    button.dataset.direction
+                );
+            }
+        );
+    });
+
+
+/* =========================
+   RESTART
+========================= */
+
+function restartGame() {
+
+    initAudio();
+
+    clearAllEchoes();
+
+
+    level = 1;
+
+    attempts =
+        MAX_ATTEMPTS;
+
+    ring = 3;
+
+    sector = 0;
+
+    lastDirection = null;
+
+
+    collisionCooldownUntil = 0;
+
+    nextMoveAllowed = 0;
+
+    gameLocked = false;
+
+
+    board.className = "";
+
+
+    updateDisplay();
+
+    updatePlayerPosition();
+
+
+    message.textContent =
+        "Level 1 — Go!";
+}
+
+
+/* =========================
+   START
+========================= */
+
+updateDisplay();
+
+updatePlayerPosition();
+
+animate();
+
+</script>
+
+</body>
+</html>
